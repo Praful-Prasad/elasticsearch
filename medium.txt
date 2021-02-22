@@ -1,0 +1,238 @@
+
+#DELETE INDEX -
+curl -XDELETE 'localhost:9200/debit?pretty'
+curl -XDELETE 'localhost:9200/credit?pretty'
+
+
+curl -X PUT "localhost:9200/debit?pretty" -H 'Content-Type: application/json' -d'
+{
+  "mappings": {
+    "properties": {
+      "Date": {
+        "type": "date",
+        "format": "dd-MM-yyyy"
+      },
+      "Reason": {
+        "type" : "keyword"
+      },
+      "Amount": {
+        "type" : "long"
+      }
+    }
+  }
+}
+'
+
+curl -X PUT "localhost:9200/credit?pretty" -H 'Content-Type: application/json' -d'
+{
+  "mappings": {
+    "properties": {
+      "Date": {
+        "type": "date",
+        "format": "dd-MM-yyyy"
+      },
+      "Reason": {
+        "type" : "keyword"
+      },
+      "Amount": {
+        "type" : "long"
+      }
+    }
+  }
+}
+'
+
+
+#CREATE A DOCUMENT -
+curl -X POST "localhost:9200/debit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "01-01-2020",
+    "Reason" : "Electricity Bill",
+    "Amount" : "50"
+}
+'
+
+curl -X POST "localhost:9200/debit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "02-01-2020",
+    "Reason" : "Tuition fees",
+    "Amount" : "100"
+}
+'
+
+curl -X POST "localhost:9200/debit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "03-01-2020",
+    "Reason" : "Bought Cellphone",
+    "Amount" : "250"
+}
+'
+
+curl -X POST "localhost:9200/debit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "04-01-2020",
+    "Reason" : "Repaired Printer",
+    "Amount" : "150"
+}
+'
+
+curl -X POST "localhost:9200/debit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "05-01-2020",
+    "Reason" : "Bought Sofa",
+    "Amount" : "200"
+}
+'
+
+##############
+
+curl -X POST "localhost:9200/credit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "01-01-2020",
+    "Reason" : "Sold TV",
+    "Amount" : "150"
+}
+'
+
+curl -X POST "localhost:9200/credit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "02-01-2020",
+    "Reason" : "Loan repayed by friend",
+    "Amount" : "50"
+}
+'
+
+curl -X POST "localhost:9200/credit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "03-01-2020",
+    "Reason" : "Sold Stocks",
+    "Amount" : "100"
+}
+'
+
+curl -X POST "localhost:9200/credit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "04-01-2020",
+    "Reason" : "Fixed Deposit Matured",
+    "Amount" : "200"
+}
+'
+
+curl -X POST "localhost:9200/credit/_doc?pretty" -H 'Content-Type: application/json' -d'
+{
+    "Date" : "05-01-2020",
+    "Reason" : "Loan repayed by friend",
+    "Amount" : "250"
+}
+'
+
+#VIEW ALL DOCUMENTS IN INDEX -
+curl -XGET 'http://localhost:9200/debit/_search?pretty&size=100'
+curl -XGET 'http://localhost:9200/credit/_search?pretty&size=100'
+
+#VIEW A PARTICULAR DOCUMENT IN INDEX -
+curl -X GET "localhost:9200/debit/_doc/yVufTXcB2HH7UDb-w0Sp?pretty"
+
+
+#SEARCH A DOCUMENT -
+curl -X GET "localhost:9200/debit/_search?pretty" -H 'Content-Type: application/json' -d'
+{
+  "query": {
+    "term": {
+      "Reason": "Tuition fees"
+    }
+  }
+}
+'
+curl -X GET "localhost:9200/credit/_search?pretty" -H 'Content-Type: application/json' -d'
+{
+  "query": {
+    "term": {
+      "Reason" : "Loan repayed by friend"
+    }
+  }
+}
+'
+
+curl -X GET "localhost:9200/credit/_search?pretty" -H 'Content-Type: application/json' -d'
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "Reason" : "Loan repayed by friend" } },
+        { "match": { "Date" : "05-01-2020" } }
+      ]
+    }
+  }
+}
+'
+
+
+curl -X GET "localhost:9200/credit/_search?pretty" -H 'Content-Type: application/json' -d'
+{
+  "query": {
+    "bool" : {
+      "must" : [
+        
+        {
+        "range" : {
+          "Date" : { 
+            "gte": "03-01-2020",
+            "lt": "06-01-2020"
+           }
+        }   
+        }  
+      ]
+    }
+  },
+  "aggs": {
+    "Total_Amount": {
+      "sum": {
+        "field": "Amount"
+      }
+    }
+  },
+  "sort" : [
+    { "Amount" : {"order" : "desc"}}
+  ]
+}
+'
+
+
+
+curl -X GET "localhost:9200/credit/_search?pretty" -H 'Content-Type: application/json' -d'
+{
+  "query": {
+    "bool" : {
+      "must" : [
+        
+        {
+        "range" : {
+          "Date" : { 
+            "gte": "01-01-2020",
+            "lt": "06-01-2020"
+           }
+        }   
+        }  
+      ]
+    }
+  },
+  "aggs": {
+    "Reasons": {
+      "terms": {
+        "field": "Reason"
+      },
+      "aggs": {
+        "Total_Amount": {
+          "sum": {
+            "field": "Amount"
+          }
+        }
+      }
+    }
+  },
+  "sort" : [
+    { "Amount" : {"order" : "desc"}}
+  ]
+}
+'
